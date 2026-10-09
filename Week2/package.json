@@ -1,17 +1,25 @@
 {
-  "name": "week2",
+  "name": "exercise",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "dev": "vite"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/musaniff/Computer-Graphics-Musanif.git"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/musaniff/Computer-Graphics-Musanif/issues"
+  },
+  "homepage": "https://github.com/musaniff/Computer-Graphics-Musanif#readme",
   "dependencies": {
     "three": "^0.186.1",
-    "vite": "^8.3.2"
+    "vite": "^8.3.4"
   }
 }

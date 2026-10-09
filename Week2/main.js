@@ -1,148 +1,64 @@
-import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
+import * as THREE from "three"
+import { OrbitControls } from "three/examples/jsm/Addons"
 
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x000000);
+const scene = new THREE.Scene()
+const camera = new THREE.PerspectiveCamera(
+    75,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    100
+)
+camera.position.set(5, 6, 7)
+const renderer = new THREE.WebGLRenderer()
+renderer.setSize(window.innerWidth, window.innerHeight)
+document.body.appendChild(renderer.domElement)
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
-camera.position.set(4, 3, 6);
-camera.lookAt(0, 0, 0);
+//n.dot(p)
+const n = new THREE.Vector3(0,1,0) 
+const p = new THREE.Vector3(0,0,0)
+const d = n.dot(p)
 
-const renderer = new THREE.WebGLRenderer();
-renderer.setSize(innerWidth, innerHeight);
-document.body.appendChild(renderer.domElement);
-scene.add(new THREE.AxesHelper(3));
+const geometry = new THREE.PlaneGeometry(12,12)
+const material = new THREE.MeshBasicMaterial({ color: 0x8c6969 })
+const floor = new THREE.Mesh(geometry, material)
+floor.rotation.x = -Math.PI / 2;
+floor.updateMatrixWorld(true)
+const grid = new THREE.GridHelper(12,12)
+scene.add(floor, grid)
 
-const controls = new OrbitControls(camera, renderer.domElement);
+//ray
+const o = new THREE.Vector3(2,5,-1)
+const dir = new THREE.Vector3(-1,-1,1).normalize()
 
-const origin = new THREE.Vector3(0, 0, 0);
-const a = new THREE.Vector3(2, 1, 0);
-const b = new THREE.Vector3(0, 2, 0);
+const t = (d - n.dot(o)) / n.dot(dir)
+const hit = o.clone().addScaledVector(dir,t)
 
-const arrA = new THREE.ArrowHelper(a.clone().normalize(), origin, a.length(), 0xE8431C, 0.35, 0.2);
-const arrB = new THREE.ArrowHelper(b.clone().normalize(), origin, b.length(), 0x1E40FF, 0.35, 0.2);
+const ray = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([o, hit]),
+    new THREE.LineBasicMaterial({ color: 0xff0000 })
+)
+scene.add(ray)
 
-scene.add(arrA);
-scene.add(arrB);
+const dot = new THREE.Mesh(
+    new THREE.SphereGeometry(0.18),
+    new THREE.MeshBasicMaterial({ color: 0x0000ff })
+)
 
-const sum = new THREE.Vector3().addVectors(a, b);
-const dot = a.dot(b);
+dot.position.copy(hit)
+scene.add(dot)
 
-const arrSum = new THREE.ArrowHelper(sum.clone().normalize(), origin, sum.length(), 0x3ECF8E, 0.35, 0.2);
 
-scene.add(arrSum);
+//compare with raycaster
+const raycaster = new THREE.Raycaster(o,dir).intersectObject(floor)[0]
+console.log("Our Formula" , hit)
+console.log("RayCaster", raycaster.point)
 
-const gui = new GUI();
+const control = new OrbitControls(camera, renderer.domElement)
 
-const params = {
-    aX: a.x, aY: a.y, aZ: a.z,
-    bX: b.x, bY: b.y, bZ: b.z,
-    sum: ' ',
-    dot: ' ',
-    cross: ' ',
-    crossLength: ' ',
-    angle: ' '
+function animate(){
+    requestAnimationFrame(animate)
+    control.update()
+    renderer.render(scene,camera)
 }
 
-
-// folder for vector a
-const aFolder = gui.addFolder('Vector A');
-
-aFolder.add(params, 'aX', -5, 5, 0.1).name(' X').onChange((value) => {
-    a.x = value;
-    updateVector();
-});
-
-aFolder.add(params, 'aY', -5, 5, 0.1).name(' Y').onChange((value) => {
-    a.y = value;
-    updateVector();
-});
-
-aFolder.add(params, 'aZ', -5, 5, 0.1).name(' Z').onChange((value) => {
-    a.z = value;
-    updateVector();
-});
-
-
-// folder for vector b
-const bFolder = gui.addFolder('Vector B');
-
-bFolder.add(params, 'bX', -5, 5, 0.1).name(' X').onChange((value) => {
-    b.x = value;
-    updateVector();
-});
-
-bFolder.add(params, 'bY', -5, 5, 0.1).name(' Y').onChange((value) => {
-    b.y = value;
-    updateVector();
-});
-
-bFolder.add(params, 'bZ', -5, 5, 0.1).name(' Z').onChange((value) => {
-    b.z = value;
-    updateVector();
-});
-
-
-const results = gui.addFolder('Results');
-
-results.add(params, 'sum').name('Sum').disable();
-results.add(params, 'dot').name('Dot Product').disable();
-results.add(params, 'cross').name('Cross Product').disable();
-results.add(params, 'crossLength').name('Cross Length').disable();
-results.add(params, 'angle').name('Angle (degrees)').disable();
-
-
-function updateVector() {
-
-    arrA.setDirection(a.clone().normalize());
-    arrA.setLength(a.length(), 0.35, 0.3);
-
-    arrB.setDirection(b.clone().normalize());
-    arrB.setLength(b.length(), 0.35, 0.3);
-
-
-    // a + b
-    sum.addVectors(a, b);
-
-    arrSum.setDirection(sum.clone().normalize());
-    arrSum.setLength(sum.length(), 0.35, 0.3);
-
-
-    // dot
-    const dot = a.dot(b);
-
-    const cross = new THREE.Vector3().crossVectors(a, b);
-    const crossLength = cross.length();
-
-    const cos = THREE.MathUtils.clamp(
-        dot / (a.length() * b.length()),
-        -1,
-        1
-    );
-
-    const angle = THREE.MathUtils.radToDeg(Math.acos(cos));
-
-
-    params.sum = `{${sum.x}, ${sum.y}, ${sum.z}}`;
-    params.dot = dot;
-    params.cross = `{${cross.x}, ${cross.y}, ${cross.z}}`;
-    params.crossLength = crossLength;
-    params.angle = angle;
-
-
-    results.controllersRecursive().forEach(controller => {
-        controller.updateDisplay();
-    });
-
-}
-
-
-function animate() {
-    requestAnimationFrame(animate);
-    controls.update();
-    renderer.render(scene, camera);
-}
-
-updateVector();
-animate();
+animate()
